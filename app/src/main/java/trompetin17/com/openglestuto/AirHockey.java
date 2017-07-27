@@ -1,12 +1,7 @@
 package trompetin17.com.openglestuto;
 
 import android.content.Context;
-import android.opengl.GLES20;
 import android.opengl.Matrix;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
 import trompetin17.com.openglestuto.interfaces.IDrawObject;
 import trompetin17.com.openglestuto.objects.Mallet;
@@ -15,8 +10,6 @@ import trompetin17.com.openglestuto.objects.Table;
 import trompetin17.com.openglestuto.programs.ColorShaderProgram;
 import trompetin17.com.openglestuto.programs.TextureShaderProgram;
 import trompetin17.com.openglestuto.util.Geometry;
-import trompetin17.com.openglestuto.util.ShaderHelper;
-import trompetin17.com.openglestuto.util.TextResourceReader;
 import trompetin17.com.openglestuto.util.TextureHelper;
 
 /**
@@ -27,6 +20,11 @@ public class AirHockey implements IDrawObject {
     private final float[] mModelMatrix = new float[16];
     private final float[] mModelViewProjectionMatrix = new float[16];
     private final float[] mInvertedProjectionMatrix = new float[16];
+
+    private final float leftBound = -0.5f;
+    private final float rightBound = 0.5f;
+    private final float farBound = -0.8f;
+    private final float nearBound = 0.8f;
 
     private Table mTable;
     private Mallet mMallet;
@@ -39,6 +37,9 @@ public class AirHockey implements IDrawObject {
 
     private boolean mMalletPressed = false;
     private Geometry.Point mBlueMalletPosition;
+    private Geometry.Point mPreviousBlueMalletPosition;
+    private Geometry.Point mPuckPosition;
+    private Geometry.Vector mPuckVector;
 
     public AirHockey(Context context) {
         mTable = new Table();
@@ -51,6 +52,8 @@ public class AirHockey implements IDrawObject {
         mTexture = TextureHelper.loadTexture(context, R.drawable.air_hockey_surface);
 
         mBlueMalletPosition = new Geometry.Point(0f, mMallet.height / 2f, 0.4f);
+        mPuckPosition = new Geometry.Point(0f, mPuck.height / 2f, 0f);
+        mPuckVector = new Geometry.Vector(0f, 0f, 0f);
     }
 
     @Override
@@ -69,7 +72,7 @@ public class AirHockey implements IDrawObject {
         mMallet.bindData(mColorProgram);
         mMallet.draw();
 
-        positionObjectInScene(viewProjectionMatrix, 0f, mMallet.height / 2f, 0.4f);
+        positionObjectInScene(viewProjectionMatrix, mBlueMalletPosition.x, mBlueMalletPosition.y, mBlueMalletPosition.z);
         mColorProgram.setUniforms(mModelViewProjectionMatrix, 0f, 0f, 1f);
         mMallet.draw();
 
@@ -139,6 +142,23 @@ public class AirHockey implements IDrawObject {
     }
 
     public void handleTouchDrag(float normalizedX, float normalizedY) {
+        if (mMalletPressed) {
+            Geometry.Ray ray = convertNormalized2DPointToRay(normalizedX, normalizedY);
+            Geometry.Plane plane = new Geometry.Plane(new Geometry.Point(0, 0, 0), new Geometry.Vector(0, 1, 0));
 
+            Geometry.Point touchedPoint = Geometry.intersectionPoint(ray, plane);
+            mPreviousBlueMalletPosition = mBlueMalletPosition;
+            mBlueMalletPosition = new Geometry.Point(clamp(touchedPoint.x, leftBound + mMallet.radius, rightBound - mMallet.radius), mMallet.height / 2f, clamp(touchedPoint.z, 0f + mMallet.radius, nearBound - mMallet.radius));
+
+            float distance = Geometry.vectorBetween(mBlueMalletPosition, mPuckPosition).length();
+
+            if (distance < (mPuck.radius + mMallet.radius)) {
+                mPuckVector = Geometry.vectorBetween(mPreviousBlueMalletPosition, mBlueMalletPosition);
+            }
+        }
+    }
+
+    private float clamp(float value, float min, float max) {
+        return Math.min(max, Math.max(value, min));
     }
 }

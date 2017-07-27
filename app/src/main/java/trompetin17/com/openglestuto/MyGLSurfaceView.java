@@ -10,7 +10,6 @@ import android.view.MotionEvent;
 
 public class MyGLSurfaceView extends GLSurfaceView {
     private final MyGLRenderer mRenderer;
-    private AirHockey mAirHockey;
     public MyGLSurfaceView(Context context) {
         super(context);
 
@@ -34,14 +33,14 @@ public class MyGLSurfaceView extends GLSurfaceView {
                 this.queueEvent(new Runnable() {
                     @Override
                     public void run() {
-                        mAirHockey.handleTouchPress(normalizedX, normalizedY);
+                        ((AirHockey)mRenderer.getCurrentObject()).handleTouchPress(normalizedX, normalizedY);
                     }
                 });
             } else if(event.getAction() == MotionEvent.ACTION_MOVE) {
                 this.queueEvent(new Runnable() {
                     @Override
                     public void run() {
-                        mAirHockey.handleTouchDrag(normalizedX, normalizedY);
+                        ((AirHockey)mRenderer.getCurrentObject()).handleTouchDrag(normalizedX, normalizedY);
                     }
                 });
             }

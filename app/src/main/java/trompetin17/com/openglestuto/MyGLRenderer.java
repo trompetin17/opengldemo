@@ -32,6 +32,10 @@ public class MyGLRenderer implements GLSurfaceView.Renderer {
         mCurrentObject = new AirHockey(mContext);
     }
 
+    public IDrawObject getCurrentObject() {
+        return mCurrentObject;
+    }
+
     @Override
     public void onSurfaceChanged(GL10 gl10, int width, int height) {
         GLES20.glViewport(0, 0, width, height);
